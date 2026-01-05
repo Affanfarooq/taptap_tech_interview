@@ -11,6 +11,7 @@ import '../blocs/product_state.dart';
 import '../widgets/product_grid.dart';
 import '../widgets/product_table.dart';
 import '../widgets/search_filter_bar.dart';
+import '../widgets/product_form_dialog.dart';
 
 /// Product List Page
 class ProductListPage extends StatefulWidget {
@@ -74,10 +75,7 @@ class _ProductListPageState extends State<ProductListPage> {
   }
 
   void _onAddProduct() {
-    // TODO: Open add product dialog (Module 8)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add product dialog - Coming in Module 8')),
-    );
+    ProductFormDialog.show(context);
   }
 
   @override

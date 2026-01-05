@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/product_model.dart';
 import '../blocs/product_cubit.dart';
+import 'product_form_dialog.dart';
 
 /// Product Table View for Desktop/Tablet
 class ProductTable extends StatefulWidget {
@@ -200,15 +201,40 @@ class _ProductTableState extends State<ProductTable> {
                           iconSize: 20,
                           tooltip: 'Edit',
                           onPressed: () {
-                            // TODO: Open edit dialog (Module 8)
+                            ProductFormDialog.show(context, product: product);
                           },
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete_outline),
                           iconSize: 20,
                           tooltip: 'Delete',
-                          onPressed: () {
-                            // TODO: Show delete confirmation (Module 8)
+                          onPressed: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Delete Product'),
+                                content: Text(
+                                  'Are you sure you want to delete "${product.title}"?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true && context.mounted) {
+                              context.read<ProductCubit>().deleteProductById(
+                                product.id,
+                              );
+                            }
                           },
                         ),
                       ],
