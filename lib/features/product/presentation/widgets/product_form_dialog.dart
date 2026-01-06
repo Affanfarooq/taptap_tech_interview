@@ -9,6 +9,14 @@ class ProductFormDialog extends StatefulWidget {
 
   const ProductFormDialog({super.key, this.product});
 
+  /// Static method to show the dialog
+  static Future<void> show(BuildContext context, {ProductModel? product}) {
+    return showDialog(
+      context: context,
+      builder: (context) => ProductFormDialog(product: product),
+    );
+  }
+
   @override
   State<ProductFormDialog> createState() => _ProductFormDialogState();
 }
@@ -271,13 +279,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
           ],
         ),
       ),
-    );
-  }
-
-  static Future<void> show(BuildContext context, {ProductModel? product}) {
-    return showDialog(
-      context: context,
-      builder: (context) => ProductFormDialog(product: product),
     );
   }
 }
