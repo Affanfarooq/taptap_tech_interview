@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../data/models/product_model.dart';
@@ -37,6 +38,10 @@ class ProductCubit extends Cubit<ProductState> {
     int limit = AppConstants.itemsPerPage,
   }) async {
     try {
+      developer.log(
+        '📦 Loading products (page: $page, limit: $limit)',
+        name: 'ProductCubit',
+      );
       emit(const ProductLoading());
 
       final skip = page * limit;
@@ -44,6 +49,11 @@ class ProductCubit extends Cubit<ProductState> {
 
       _allProducts = response.products;
       final totalPages = (response.total / limit).ceil();
+
+      developer.log(
+        '✅ Loaded ${response.products.length} products',
+        name: 'ProductCubit',
+      );
 
       emit(
         ProductLoaded(
@@ -54,6 +64,7 @@ class ProductCubit extends Cubit<ProductState> {
         ),
       );
     } catch (e) {
+      developer.log('❌ Error loading products: $e', name: 'ProductCubit');
       emit(ProductError(e.toString()));
     }
   }
@@ -65,12 +76,18 @@ class ProductCubit extends Cubit<ProductState> {
     int limit = AppConstants.itemsPerPage,
   }) async {
     try {
+      developer.log('🔍 Searching products: "$query"', name: 'ProductCubit');
       emit(const ProductLoading());
 
       final skip = page * limit;
       final response = await searchProducts(query, skip: skip, limit: limit);
 
       final totalPages = (response.total / limit).ceil();
+
+      developer.log(
+        '✅ Search found ${response.products.length} products',
+        name: 'ProductCubit',
+      );
 
       emit(
         ProductLoaded(
@@ -82,6 +99,7 @@ class ProductCubit extends Cubit<ProductState> {
         ),
       );
     } catch (e) {
+      developer.log('❌ Error searching products: $e', name: 'ProductCubit');
       emit(ProductError(e.toString()));
     }
   }
@@ -93,37 +111,44 @@ class ProductCubit extends Cubit<ProductState> {
     int limit = AppConstants.itemsPerPage,
   }) async {
     if (category == null || category.isEmpty) {
+      developer.log('🔄 Clearing category filter', name: 'ProductCubit');
       await loadProducts(page: page, limit: limit);
       return;
     }
 
     try {
+      developer.log(
+        '📂 Filtering by category: "$category"',
+        name: 'ProductCubit',
+      );
       emit(const ProductLoading());
 
-      // For category filtering, we'll load all products and filter locally
-      // since dummyjson API doesn't support category filtering with pagination well
-      final response = await getProducts(skip: 0, limit: 100);
+      // Use repository's getProductsByCategory method
+      final skip = page * limit;
+      final response = await getProducts.repository.getProductsByCategory(
+        category,
+        skip: skip,
+        limit: limit,
+      );
 
-      final filteredProducts = response.products
-          .where((p) => p.category.toLowerCase() == category.toLowerCase())
-          .toList();
+      final totalPages = (response.total / limit).ceil();
 
-      final totalPages = (filteredProducts.length / limit).ceil();
-      final startIndex = page * limit;
-      final endIndex = (startIndex + limit).clamp(0, filteredProducts.length);
-
-      final paginatedProducts = filteredProducts.sublist(startIndex, endIndex);
+      developer.log(
+        '✅ Category "$category" has ${response.products.length} products',
+        name: 'ProductCubit',
+      );
 
       emit(
         ProductLoaded(
-          products: paginatedProducts,
-          total: filteredProducts.length,
+          products: response.products,
+          total: response.total,
           currentPage: page,
           totalPages: totalPages,
           selectedCategory: category,
         ),
       );
     } catch (e) {
+      developer.log('❌ Error filtering by category: $e', name: 'ProductCubit');
       emit(ProductError(e.toString()));
     }
   }
