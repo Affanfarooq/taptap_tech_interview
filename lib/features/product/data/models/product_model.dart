@@ -13,7 +13,7 @@ class ProductModel extends Equatable {
   final double discountPercentage;
   final double rating;
   final int stock;
-  final String brand;
+  final String? brand;
   final String category;
   final String thumbnail;
   final List<String> images;
@@ -26,7 +26,7 @@ class ProductModel extends Equatable {
     required this.discountPercentage,
     required this.rating,
     required this.stock,
-    required this.brand,
+    this.brand,
     required this.category,
     required this.thumbnail,
     required this.images,
@@ -35,17 +35,13 @@ class ProductModel extends Equatable {
   /// Check if product is in stock
   bool get isInStock => stock > 0;
 
-  /// Get stock status as string
   String get stockStatus => isInStock ? 'In Stock' : 'Out of Stock';
 
-  /// Factory constructor for creating a new ProductModel instance from a map
   factory ProductModel.fromJson(Map<String, dynamic> json) =>
       _$ProductModelFromJson(json);
 
-  /// Method for converting ProductModel instance to a map
   Map<String, dynamic> toJson() => _$ProductModelToJson(this);
 
-  /// Create a copy with updated fields
   ProductModel copyWith({
     int? id,
     String? title,

@@ -1,24 +1,34 @@
 import 'package:flutter/material.dart';
 
-/// Utility class for responsive design
 class ResponsiveUtils {
-  /// Check if device is mobile
+  static const double mobileBreakpoint = 600;
+  static const double tabletBreakpoint = 1024;
+
   static bool isMobile(BuildContext context) {
-    return MediaQuery.of(context).size.width < 600;
+    return MediaQuery.of(context).size.width < mobileBreakpoint;
   }
 
-  /// Check if device is tablet
   static bool isTablet(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    return width >= 600 && width < 900;
+    return width >= mobileBreakpoint && width < tabletBreakpoint;
   }
 
-  /// Check if device is desktop
   static bool isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width >= 900;
+    return MediaQuery.of(context).size.width >= tabletBreakpoint;
   }
 
-  /// Get responsive value based on screen size
+  static int getGridColumns(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
+    if (width < 800) {
+      return 2; // Mobile and small tablets
+    } else if (width < 1200) {
+      return 3; // Large tablets and small desktops
+    } else {
+      return 4; // Large desktops
+    }
+  }
+
   static T getResponsiveValue<T>(
     BuildContext context, {
     required T mobile,

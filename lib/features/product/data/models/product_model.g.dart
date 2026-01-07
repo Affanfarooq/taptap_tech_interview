@@ -1,5 +1,3 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'product_model.dart';
 
 // **************************************************************************
@@ -14,7 +12,7 @@ ProductModel _$ProductModelFromJson(Map<String, dynamic> json) => ProductModel(
   discountPercentage: (json['discountPercentage'] as num).toDouble(),
   rating: (json['rating'] as num).toDouble(),
   stock: (json['stock'] as num).toInt(),
-  brand: json['brand'] as String,
+  brand: json['brand'] as String?,
   category: json['category'] as String,
   thumbnail: json['thumbnail'] as String,
   images: (json['images'] as List<dynamic>).map((e) => e as String).toList(),

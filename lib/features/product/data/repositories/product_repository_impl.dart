@@ -22,15 +22,6 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
-  Future<ProductModel> getProductById(int id) async {
-    try {
-      return await remoteDataSource.getProductById(id);
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  @override
   Future<ProductListResponse> searchProducts(
     String query, {
     int skip = 0,

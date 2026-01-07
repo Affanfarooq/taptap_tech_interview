@@ -1,7 +1,12 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../data/models/product_model.dart';
 import '../blocs/product_cubit.dart';
+import '../blocs/product_state.dart';
 
 /// Product Form Dialog for Add/Edit
 class ProductFormDialog extends StatefulWidget {
@@ -28,7 +33,12 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
   late TextEditingController _priceController;
   late TextEditingController _stockController;
   late TextEditingController _brandController;
-  late TextEditingController _categoryController;
+  String? _selectedCategory;
+
+  // Image picker
+  final ImagePicker _picker = ImagePicker();
+  XFile? _selectedImage;
+  String? _imageUrl;
 
   bool get isEditing => widget.product != null;
 
@@ -46,9 +56,38 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
       text: widget.product?.stock.toString() ?? '',
     );
     _brandController = TextEditingController(text: widget.product?.brand ?? '');
-    _categoryController = TextEditingController(
-      text: widget.product?.category ?? '',
-    );
+    _selectedCategory = widget.product?.category;
+    _imageUrl = widget.product?.thumbnail;
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = image;
+          // For web, we'll use the image bytes directly
+          // For mobile, we use the path
+          if (kIsWeb) {
+            _imageUrl = null; // Will use _selectedImage for display
+          } else {
+            _imageUrl = image.path;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      }
+    }
   }
 
   @override
@@ -58,12 +97,18 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
     _priceController.dispose();
     _stockController.dispose();
     _brandController.dispose();
-    _categoryController.dispose();
     super.dispose();
   }
 
   void _onSubmit() {
     if (_formKey.currentState!.validate()) {
+      if (_selectedCategory == null || _selectedCategory!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a category')),
+        );
+        return;
+      }
+
       final product = ProductModel(
         id: widget.product?.id ?? DateTime.now().millisecondsSinceEpoch,
         title: _titleController.text,
@@ -73,9 +118,11 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
         rating: widget.product?.rating ?? 0,
         stock: int.parse(_stockController.text),
         brand: _brandController.text,
-        category: _categoryController.text,
+        category: _selectedCategory!,
         thumbnail:
-            widget.product?.thumbnail ?? 'https://via.placeholder.com/150',
+            _imageUrl ??
+            widget.product?.thumbnail ??
+            'https://via.placeholder.com/150',
         images: widget.product?.images ?? [],
       );
 
@@ -102,7 +149,11 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
                 ),
@@ -111,13 +162,12 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                 children: [
                   Icon(
                     isEditing ? Icons.edit : Icons.add,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 12),
                   Text(
                     isEditing ? 'Edit Product' : 'Add New Product',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -231,18 +281,120 @@ class _ProductFormDialogState extends State<ProductFormDialog> {
                       ),
                       const SizedBox(height: 16),
 
-                      TextFormField(
-                        controller: _categoryController,
-                        decoration: const InputDecoration(
-                          labelText: 'Category *',
-                          hintText: 'Enter category',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a category';
-                          }
-                          return null;
+                      // Category Dropdown
+                      BlocBuilder<ProductCubit, ProductState>(
+                        builder: (context, state) {
+                          final categories = context
+                              .read<ProductCubit>()
+                              .categoriesList;
+
+                          return DropdownButtonFormField<String>(
+                            value: _selectedCategory,
+                            decoration: const InputDecoration(
+                              labelText: 'Category *',
+                              hintText: 'Select category',
+                            ),
+                            items: categories.map((category) {
+                              return DropdownMenuItem(
+                                value: category,
+                                child: Text(
+                                  category.substring(0, 1).toUpperCase() +
+                                      category.substring(1),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedCategory = value;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please select a category';
+                              }
+                              return null;
+                            },
+                          );
                         },
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Image Picker Section
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Product Image',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Image Preview
+                          if (_selectedImage != null || _imageUrl != null)
+                            Container(
+                              height: 150,
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 12),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: _selectedImage != null
+                                    ? (kIsWeb
+                                          ? FutureBuilder<Uint8List>(
+                                              future: _selectedImage!
+                                                  .readAsBytes(),
+                                              builder: (context, snapshot) {
+                                                if (snapshot.hasData) {
+                                                  return Image.memory(
+                                                    snapshot.data!,
+                                                    fit: BoxFit.cover,
+                                                  );
+                                                }
+                                                return const Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                );
+                                              },
+                                            )
+                                          : Image.file(
+                                              File(_selectedImage!.path),
+                                              fit: BoxFit.cover,
+                                            ))
+                                    : Image.network(
+                                        _imageUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return const Center(
+                                                child: Icon(
+                                                  Icons.broken_image,
+                                                  size: 48,
+                                                ),
+                                              );
+                                            },
+                                      ),
+                              ),
+                            ),
+
+                          // Pick Image Button
+                          OutlinedButton.icon(
+                            onPressed: _pickImage,
+                            icon: const Icon(Icons.image),
+                            label: Text(
+                              _selectedImage != null || _imageUrl != null
+                                  ? 'Change Image'
+                                  : 'Pick Image',
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 48),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

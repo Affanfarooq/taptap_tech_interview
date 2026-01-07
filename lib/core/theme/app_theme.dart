@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// App theme configuration with Material 3 design
 class AppTheme {
-  // Private constructor to prevent instantiation
   AppTheme._();
 
   // Color schemes
-  static const _primaryColor = Color(0xFF6366F1); // Indigo
-  static const _secondaryColor = Color(0xFF8B5CF6); // Purple
+  static const _primaryColor = Color(0xFF6366F1);
+  static const _secondaryColor = Color(0xFF8B5CF6);
   static const _errorColor = Color(0xFFEF4444);
   static const _successColor = Color(0xFF10B981);
   static const _warningColor = Color(0xFFF59E0B);
+  static const double _borderRadius = 12.0;
 
   /// Light theme
   static ThemeData get lightTheme {
@@ -21,11 +20,13 @@ class AppTheme {
       primary: _primaryColor,
       secondary: _secondaryColor,
       error: _errorColor,
+      surface: Colors.white,
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      scaffoldBackgroundColor: Colors.white,
       textTheme: GoogleFonts.interTextTheme(),
 
       // AppBar Theme
@@ -34,18 +35,15 @@ class AppTheme {
         elevation: 0,
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
-        titleTextStyle: GoogleFonts.inter(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: colorScheme.onSurface,
-        ),
+        surfaceTintColor: Colors.transparent,
       ),
 
       // Card Theme
       cardTheme: CardThemeData(
         elevation: 0,
+        color: colorScheme.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(_borderRadius),
           side: BorderSide(color: colorScheme.outlineVariant, width: 1),
         ),
       ),
@@ -53,21 +51,20 @@ class AppTheme {
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colorScheme.surfaceContainerHighest,
+        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.1),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(_borderRadius),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(_borderRadius),
           borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(_borderRadius),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(_borderRadius),
           borderSide: BorderSide(color: colorScheme.error),
         ),
         contentPadding: const EdgeInsets.symmetric(
@@ -81,7 +78,9 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(_borderRadius),
+          ),
           textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -104,7 +103,23 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(_borderRadius),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+
+      // Filled Button Theme
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(_borderRadius),
+          ),
           textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -114,9 +129,7 @@ class AppTheme {
 
       // Data Table Theme
       dataTableTheme: DataTableThemeData(
-        headingRowColor: WidgetStateProperty.all(
-          colorScheme.surfaceContainerHighest,
-        ),
+        headingRowColor: WidgetStateProperty.all(Colors.transparent),
         headingTextStyle: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w600,
@@ -126,12 +139,13 @@ class AppTheme {
           fontSize: 14,
           color: colorScheme.onSurface,
         ),
+        dividerThickness: 1.0,
       ),
 
       // Drawer Theme
       drawerTheme: DrawerThemeData(
         backgroundColor: colorScheme.surface,
-        elevation: 1,
+        elevation: 0,
       ),
 
       // Navigation Rail Theme
@@ -152,7 +166,7 @@ class AppTheme {
     );
   }
 
-  /// Dark theme
+  /// Dark theme implementation
   static ThemeData get darkTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: _primaryColor,
@@ -165,6 +179,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      scaffoldBackgroundColor: colorScheme.surface,
       textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
 
       // AppBar Theme
@@ -173,18 +188,15 @@ class AppTheme {
         elevation: 0,
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
-        titleTextStyle: GoogleFonts.inter(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: colorScheme.onSurface,
-        ),
+        surfaceTintColor: Colors.transparent,
       ),
 
       // Card Theme
       cardTheme: CardThemeData(
         elevation: 0,
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(_borderRadius),
           side: BorderSide(color: colorScheme.outlineVariant, width: 1),
         ),
       ),
@@ -192,21 +204,20 @@ class AppTheme {
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colorScheme.surfaceContainerHighest,
+        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(_borderRadius),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(_borderRadius),
+          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(_borderRadius),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(_borderRadius),
           borderSide: BorderSide(color: colorScheme.error),
         ),
         contentPadding: const EdgeInsets.symmetric(
@@ -220,7 +231,9 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(_borderRadius),
+          ),
           textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -243,7 +256,23 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(_borderRadius),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+
+      // Filled Button Theme
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(_borderRadius),
+          ),
           textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -253,9 +282,7 @@ class AppTheme {
 
       // Data Table Theme
       dataTableTheme: DataTableThemeData(
-        headingRowColor: WidgetStateProperty.all(
-          colorScheme.surfaceContainerHighest,
-        ),
+        headingRowColor: WidgetStateProperty.all(Colors.transparent),
         headingTextStyle: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w600,
@@ -265,12 +292,13 @@ class AppTheme {
           fontSize: 14,
           color: colorScheme.onSurface,
         ),
+        dividerThickness: 1.0,
       ),
 
       // Drawer Theme
       drawerTheme: DrawerThemeData(
         backgroundColor: colorScheme.surface,
-        elevation: 1,
+        elevation: 0,
       ),
 
       // Navigation Rail Theme

@@ -1,12 +1,8 @@
 import '../models/product_model.dart';
 
-/// Product repository interface
 abstract class ProductRepository {
   /// Get all products with pagination
   Future<ProductListResponse> getProducts({int skip = 0, int limit = 10});
-
-  /// Get a single product by ID
-  Future<ProductModel> getProductById(int id);
 
   /// Search products
   Future<ProductListResponse> searchProducts(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Custom loading indicator
 class LoadingIndicator extends StatelessWidget {
   final String? message;
   final double size;

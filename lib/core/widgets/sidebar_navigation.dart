@@ -8,7 +8,8 @@ class SidebarNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = ResponsiveUtils.isMobile(context);
+    final isDesktop = ResponsiveUtils.isDesktop(context);
+    final useDrawer = !isDesktop;
     final currentRoute = GoRouterState.of(context).uri.path;
 
     final navigationItems = [
@@ -32,7 +33,7 @@ class SidebarNavigation extends StatelessWidget {
       ),
     ];
 
-    if (isMobile) {
+    if (useDrawer) {
       return Drawer(
         child: _buildNavigationContent(
           context,
@@ -105,14 +106,31 @@ class SidebarNavigation extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: ListTile(
-                  leading: Icon(isSelected ? item.selectedIcon : item.icon),
-                  title: Text(item.label),
+                  leading: Icon(
+                    isSelected ? item.selectedIcon : item.icon,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  title: Text(
+                    item.label,
+                    style: TextStyle(
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                  ),
                   selected: isSelected,
-                  selectedTileColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer.withOpacity(0.5),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
+                    side: isSelected
+                        ? BorderSide(
+                            color: Theme.of(context).colorScheme.primary,
+                          )
+                        : BorderSide.none,
                   ),
                   onTap: () {
                     context.go(item.route);
@@ -129,7 +147,7 @@ class SidebarNavigation extends StatelessWidget {
         const Divider(),
 
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(24.0),
           child: Text(
             'v1.0.0',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(

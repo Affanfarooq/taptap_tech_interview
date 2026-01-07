@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import '../../../../core/utils/app_logger.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../data/models/product_model.dart';
@@ -28,7 +28,6 @@ class ProductCubit extends Cubit<ProductState> {
     required this.getCategories,
   }) : super(const ProductInitial());
 
-  // Cache for products to avoid unnecessary API calls
   List<ProductModel> _allProducts = [];
   List<String> _categories = [];
 
@@ -36,12 +35,17 @@ class ProductCubit extends Cubit<ProductState> {
   Future<void> loadProducts({
     int page = 0,
     int limit = AppConstants.itemsPerPage,
+    bool forceReload = false,
   }) async {
+    if (!forceReload &&
+        state is ProductLoaded &&
+        (state as ProductLoaded).currentPage == page) {
+      AppLogger.i('⏭️ Products already loaded for page $page, skipping hit');
+      return;
+    }
+
     try {
-      developer.log(
-        '📦 Loading products (page: $page, limit: $limit)',
-        name: 'ProductCubit',
-      );
+      AppLogger.i('📦 Loading products (page: $page, limit: $limit)');
       emit(const ProductLoading());
 
       final skip = page * limit;
@@ -50,10 +54,7 @@ class ProductCubit extends Cubit<ProductState> {
       _allProducts = response.products;
       final totalPages = (response.total / limit).ceil();
 
-      developer.log(
-        '✅ Loaded ${response.products.length} products',
-        name: 'ProductCubit',
-      );
+      AppLogger.i('✅ Loaded ${response.products.length} products');
 
       emit(
         ProductLoaded(
@@ -64,8 +65,38 @@ class ProductCubit extends Cubit<ProductState> {
         ),
       );
     } catch (e) {
-      developer.log('❌ Error loading products: $e', name: 'ProductCubit');
+      AppLogger.e('❌ Error loading products: $e');
       emit(ProductError(e.toString()));
+    }
+  }
+
+  /// Load more products for infinite scroll (no loading indicator)
+  Future<void> loadMoreProducts() async {
+    final currentState = state;
+    if (currentState is! ProductLoaded) return;
+
+    if (currentState.currentPage >= currentState.totalPages - 1) return;
+
+    try {
+      final nextPage = currentState.currentPage + 1;
+      AppLogger.i('➕ Loading more products (page: $nextPage)');
+
+      final skip = nextPage * AppConstants.itemsPerPage;
+      final response = await getProducts(
+        skip: skip,
+        limit: AppConstants.itemsPerPage,
+      );
+
+      AppLogger.i('✅ Loaded ${response.products.length} more products');
+
+      // Append new products to existing list
+      final updatedProducts = [...currentState.products, ...response.products];
+
+      emit(
+        currentState.copyWith(products: updatedProducts, currentPage: nextPage),
+      );
+    } catch (e) {
+      AppLogger.e('❌ Error loading more products: $e');
     }
   }
 
@@ -76,7 +107,7 @@ class ProductCubit extends Cubit<ProductState> {
     int limit = AppConstants.itemsPerPage,
   }) async {
     try {
-      developer.log('🔍 Searching products: "$query"', name: 'ProductCubit');
+      AppLogger.i('🔍 Searching products: "$query"');
       emit(const ProductLoading());
 
       final skip = page * limit;
@@ -84,10 +115,7 @@ class ProductCubit extends Cubit<ProductState> {
 
       final totalPages = (response.total / limit).ceil();
 
-      developer.log(
-        '✅ Search found ${response.products.length} products',
-        name: 'ProductCubit',
-      );
+      AppLogger.i('✅ Search found ${response.products.length} products');
 
       emit(
         ProductLoaded(
@@ -99,7 +127,7 @@ class ProductCubit extends Cubit<ProductState> {
         ),
       );
     } catch (e) {
-      developer.log('❌ Error searching products: $e', name: 'ProductCubit');
+      AppLogger.e('❌ Error searching products: $e');
       emit(ProductError(e.toString()));
     }
   }
@@ -111,19 +139,15 @@ class ProductCubit extends Cubit<ProductState> {
     int limit = AppConstants.itemsPerPage,
   }) async {
     if (category == null || category.isEmpty) {
-      developer.log('🔄 Clearing category filter', name: 'ProductCubit');
+      AppLogger.i('🔄 Clearing category filter');
       await loadProducts(page: page, limit: limit);
       return;
     }
 
     try {
-      developer.log(
-        '📂 Filtering by category: "$category"',
-        name: 'ProductCubit',
-      );
+      AppLogger.i('📂 Filtering by category: "$category"');
       emit(const ProductLoading());
 
-      // Use repository's getProductsByCategory method
       final skip = page * limit;
       final response = await getProducts.repository.getProductsByCategory(
         category,
@@ -133,9 +157,8 @@ class ProductCubit extends Cubit<ProductState> {
 
       final totalPages = (response.total / limit).ceil();
 
-      developer.log(
+      AppLogger.i(
         '✅ Category "$category" has ${response.products.length} products',
-        name: 'ProductCubit',
       );
 
       emit(
@@ -148,7 +171,7 @@ class ProductCubit extends Cubit<ProductState> {
         ),
       );
     } catch (e) {
-      developer.log('❌ Error filtering by category: $e', name: 'ProductCubit');
+      AppLogger.e('❌ Error filtering by category: $e');
       emit(ProductError(e.toString()));
     }
   }
@@ -182,7 +205,11 @@ class ProductCubit extends Cubit<ProductState> {
   }
 
   /// Load categories
-  Future<void> loadCategories() async {
+  Future<void> loadCategories({bool forceReload = false}) async {
+    if (!forceReload && _categories.isNotEmpty) {
+      AppLogger.i('⏭️ Categories already loaded, skipping hit');
+      return;
+    }
     try {
       _categories = await getCategories();
       emit(CategoriesLoaded(_categories));
@@ -193,48 +220,132 @@ class ProductCubit extends Cubit<ProductState> {
 
   /// Add a new product
   Future<void> addNewProduct(ProductModel product) async {
+    // Capture current state BEFORE any emissions
+    final previousState = state;
+
     try {
+      AppLogger.i('➕ Adding new product: ${product.title}');
       emit(const ProductLoading());
 
-      await addProduct(product);
+      final addedProduct = await addProduct(product);
+      AppLogger.i('✅ Product added to API');
 
-      emit(const ProductOperationSuccess('Product added successfully'));
+      // Update local state with new product
+      if (previousState is ProductLoaded) {
+        AppLogger.i('📝 Adding product to local state');
+        final updatedProducts = [addedProduct, ...previousState.products];
 
-      // Reload products
-      await loadProducts();
+        // Emit updated state - no success state to avoid list disappearing
+        emit(
+          previousState.copyWith(
+            products: updatedProducts,
+            total: previousState.total + 1,
+          ),
+        );
+
+        AppLogger.i('✅ Product added successfully');
+      } else {
+        AppLogger.w(
+          '⚠️ Previous state was not ProductLoaded, reloading products',
+        );
+        await loadProducts();
+      }
     } catch (e) {
+      AppLogger.e('❌ Error adding product: $e');
       emit(ProductError(e.toString()));
     }
   }
 
   /// Update an existing product
   Future<void> updateExistingProduct(ProductModel product) async {
+    // Capture current state BEFORE any emissions
+    final previousState = state;
+
     try {
+      AppLogger.i('✏️ Updating product: ${product.title} (ID: ${product.id})');
       emit(const ProductLoading());
 
-      await updateProduct(product);
+      ProductModel updatedProduct;
+      try {
+        updatedProduct = await updateProduct(product);
+        AppLogger.i('✅ API update successful');
+      } catch (e) {
+        // dummyjson.com returns 404 when category changes
+        // Treat as success and use the product we sent
+        if (e.toString().contains('404')) {
+          AppLogger.w(
+            '⚠️ API returned 404 (mock API limitation), using optimistic update',
+          );
+          updatedProduct = product;
+        } else {
+          rethrow;
+        }
+      }
 
-      emit(const ProductOperationSuccess('Product updated successfully'));
+      // Update local state with new product
+      if (previousState is ProductLoaded) {
+        AppLogger.i('📝 Updating local state with new product data');
 
-      // Reload products
-      await loadProducts();
+        final updatedProducts = previousState.products.map((p) {
+          return p.id == updatedProduct.id ? updatedProduct : p;
+        }).toList();
+
+        AppLogger.i(
+          '✅ Emitting updated product list (${updatedProducts.length} products)',
+        );
+
+        // Emit the updated state - no success state to avoid list disappearing
+        emit(previousState.copyWith(products: updatedProducts));
+
+        AppLogger.i('✅ Product updated successfully');
+      } else {
+        AppLogger.w(
+          '⚠️ Previous state was not ProductLoaded, reloading products',
+        );
+        await loadProducts();
+      }
     } catch (e) {
+      AppLogger.e('❌ Error updating product: $e');
       emit(ProductError(e.toString()));
     }
   }
 
   /// Delete a product
   Future<void> deleteProductById(int id) async {
+    // Capture current state BEFORE any emissions
+    final previousState = state;
+
     try {
+      AppLogger.i('🗑️ Deleting product ID: $id');
       emit(const ProductLoading());
 
       await deleteProduct(id);
+      AppLogger.i('✅ Product deleted from API');
 
-      emit(const ProductOperationSuccess('Product deleted successfully'));
+      // Update local state by removing product
+      if (previousState is ProductLoaded) {
+        AppLogger.i('📝 Removing product from local state');
+        final updatedProducts = previousState.products
+            .where((p) => p.id != id)
+            .toList();
 
-      // Reload products
-      await loadProducts();
+        // Emit updated state - no success state to avoid list disappearing
+        emit(
+          previousState.copyWith(
+            products: updatedProducts,
+            total: previousState.total - 1,
+          ),
+        );
+
+        AppLogger.i('✅ Product deleted successfully');
+      } else {
+        AppLogger.w(
+          '⚠️ Previous state was not ProductLoaded, reloading products',
+        );
+        await loadProducts();
+      }
     } catch (e) {
+      AppLogger.e('❌ Error deleting product: $e');
       emit(ProductError(e.toString()));
     }
   }

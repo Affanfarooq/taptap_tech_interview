@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Custom error widget
 class ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;

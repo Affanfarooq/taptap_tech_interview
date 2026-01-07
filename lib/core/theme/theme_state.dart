@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-/// Theme state
 class ThemeState extends Equatable {
   final bool isDarkMode;
 

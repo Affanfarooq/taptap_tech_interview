@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/responsive_utils.dart';
 import '../../data/models/product_model.dart';
+import '../blocs/product_cubit.dart';
+import '../blocs/product_state.dart';
 
-/// Product Grid View for Mobile
-class ProductGrid extends StatelessWidget {
+/// Product Grid View for Mobile with Infinite Scroll
+class ProductGrid extends StatefulWidget {
   final List<ProductModel> products;
   final Function(int) onProductTap;
 
@@ -13,21 +17,63 @@ class ProductGrid extends StatelessWidget {
   });
 
   @override
+  State<ProductGrid> createState() => _ProductGridState();
+}
+
+class _ProductGridState extends State<ProductGrid> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.9) {
+      // User scrolled to 90% of the list, load more seamlessly
+      final cubit = context.read<ProductCubit>();
+      final state = cubit.state;
+
+      if (state is ProductLoaded && state.currentPage < state.totalPages - 1) {
+        // Use loadMoreProducts for seamless experience (no loading indicator)
+        cubit.loadMoreProducts();
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Get dynamic column count based on screen width
+    final columns = ResponsiveUtils.getGridColumns(context);
+
+    // Adjust aspect ratio based on columns to prevent overflow
+    // More columns = need taller cards
+    final aspectRatio = columns == 2 ? 0.8 : (columns == 3 ? 0.85 : 0.9);
+
     return GridView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.7,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns, // Dynamic columns
+        childAspectRatio: aspectRatio, // Dynamic aspect ratio
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
-      itemCount: products.length,
+      itemCount: widget.products.length,
       itemBuilder: (context, index) {
-        final product = products[index];
+        final product = widget.products[index];
         return _ProductCard(
           product: product,
-          onTap: () => onProductTap(product.id),
+          onTap: () => widget.onProductTap(product.id),
         );
       },
     );
@@ -54,7 +100,13 @@ class _ProductCard extends StatelessWidget {
               flex: 3,
               child: Container(
                 width: double.infinity,
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                  ),
+                ),
                 child: Image.network(
                   product.thumbnail,
                   fit: BoxFit.cover,
@@ -62,7 +114,7 @@ class _ProductCard extends StatelessWidget {
                     return Icon(
                       Icons.image_not_supported,
                       size: 48,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.outline,
                     );
                   },
                 ),
@@ -73,9 +125,10 @@ class _ProductCard extends StatelessWidget {
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8), // Reduced from 12 to 8
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     // Title
                     Text(
@@ -83,11 +136,10 @@ class _ProductCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-
                     // Price
                     Text(
                       '\$${product.price.toStringAsFixed(2)}',
@@ -96,7 +148,7 @@ class _ProductCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 8),
 
                     // Stock Status
                     Container(
@@ -108,6 +160,11 @@ class _ProductCard extends StatelessWidget {
                         color: product.isInStock
                             ? Colors.green.withOpacity(0.1)
                             : Colors.red.withOpacity(0.1),
+                        border: Border.all(
+                          color: product.isInStock
+                              ? Colors.green.withOpacity(0.5)
+                              : Colors.red.withOpacity(0.5),
+                        ),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -116,6 +173,8 @@ class _ProductCard extends StatelessWidget {
                           color: product.isInStock ? Colors.green : Colors.red,
                           fontWeight: FontWeight.w600,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

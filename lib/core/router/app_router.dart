@@ -1,24 +1,50 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/product/presentation/pages/dashboard_page.dart';
 import '../../features/product/presentation/pages/product_list_page.dart';
 import '../../features/product/presentation/pages/product_details_page.dart';
+import '../../features/product/presentation/pages/settings_page.dart';
+import '../../features/product/presentation/pages/error_page.dart';
 import '../widgets/dashboard_layout.dart';
+import '../../features/product/presentation/blocs/auth_cubit.dart';
+import '../../features/product/presentation/pages/login_page.dart';
+import 'go_router_refresh_stream.dart';
 
 /// App router configuration
 class AppRouter {
-  static final GoRouter router = GoRouter(
+  static GoRouter router(AuthCubit authCubit) => GoRouter(
     initialLocation: '/products',
+    refreshListenable: GoRouterRefreshStream(authCubit.stream),
+    redirect: (context, state) {
+      final authState = context.read<AuthCubit>().state;
+      final isLoggingIn = state.matchedLocation == '/login';
+
+      if (!authState.isAuthenticated) {
+        return isLoggingIn ? null : '/login';
+      }
+
+      if (isLoggingIn) {
+        return '/products';
+      }
+
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => const LoginPage(),
+      ),
       ShellRoute(
         builder: (context, state, child) {
-          return DashboardLayout(child: child);
+          return DashboardLayout(location: state.matchedLocation, child: child);
         },
         routes: [
           GoRoute(
             path: '/dashboard',
             name: 'dashboard',
             pageBuilder: (context, state) =>
-                NoTransitionPage(child: _DashboardPage()),
+                const NoTransitionPage(child: DashboardPage()),
           ),
           GoRoute(
             path: '/products',
@@ -30,7 +56,8 @@ class AppRouter {
             path: '/products/:id',
             name: 'product-details',
             pageBuilder: (context, state) {
-              final id = int.parse(state.pathParameters['id']!);
+              final idString = state.pathParameters['id'];
+              final id = int.tryParse(idString ?? '') ?? 0;
               return NoTransitionPage(child: ProductDetailsPage(productId: id));
             },
           ),
@@ -38,123 +65,11 @@ class AppRouter {
             path: '/settings',
             name: 'settings',
             pageBuilder: (context, state) =>
-                NoTransitionPage(child: _SettingsPage()),
+                const NoTransitionPage(child: SettingsPage()),
           ),
         ],
       ),
     ],
-    errorBuilder: (context, state) => _ErrorPage(error: state.error.toString()),
+    errorBuilder: (context, state) => ErrorPage(error: state.error.toString()),
   );
-}
-
-/// Dashboard page placeholder
-class _DashboardPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.dashboard_outlined,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Dashboard',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Welcome to Product Dashboard',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: () => context.go('/products'),
-              icon: const Icon(Icons.inventory_2_outlined),
-              label: const Text('View Products'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Settings page placeholder
-class _SettingsPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.settings_outlined,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 24),
-            Text('Settings', style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            Text(
-              'App settings and preferences',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Error page
-class _ErrorPage extends StatelessWidget {
-  final String error;
-
-  const _ErrorPage({required this.error});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 80,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Page Not Found',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            FilledButton(
-              onPressed: () => context.go('/products'),
-              child: const Text('Go to Products'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

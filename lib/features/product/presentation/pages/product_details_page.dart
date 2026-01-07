@@ -67,7 +67,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
     if (confirmed == true && mounted) {
       context.read<ProductCubit>().deleteProductById(widget.productId);
-      context.go('/products');
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/products');
+      }
     }
   }
 
@@ -77,7 +81,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/products'),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/products');
+            }
+          },
         ),
         title: const Text('Product Details'),
         actions: [
@@ -137,7 +147,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    product.brand,
+                                    product.brand ?? 'No Brand',
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium
@@ -171,34 +181,97 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           spacing: 12,
                           runSpacing: 12,
                           children: [
-                            Chip(
-                              avatar: Icon(
-                                product.isInStock
-                                    ? Icons.check_circle
-                                    : Icons.cancel,
-                                color: product.isInStock
-                                    ? Colors.green
-                                    : Colors.red,
-                                size: 20,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
                               ),
-                              label: Text(product.stockStatus),
-                              backgroundColor: product.isInStock
-                                  ? Colors.green.withOpacity(0.1)
-                                  : Colors.red.withOpacity(0.1),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: product.isInStock
+                                      ? Colors.green
+                                      : Colors.red,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    product.isInStock
+                                        ? Icons.check_circle
+                                        : Icons.cancel,
+                                    color: product.isInStock
+                                        ? Colors.green
+                                        : Colors.red,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    product.stockStatus,
+                                    style: TextStyle(
+                                      color: product.isInStock
+                                          ? Colors.green
+                                          : Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            Chip(
-                              avatar: const Icon(
-                                Icons.category_outlined,
-                                size: 20,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
                               ),
-                              label: Text(product.category),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outlineVariant,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.category_outlined, size: 18),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    product.category,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
                             ),
-                            Chip(
-                              avatar: const Icon(
-                                Icons.inventory_2_outlined,
-                                size: 20,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
                               ),
-                              label: Text('${product.stock} in stock'),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outlineVariant,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${product.stock} in stock',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -233,7 +306,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 icon: const Icon(Icons.edit),
                                 label: const Text('Edit Product'),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 20,
+                                  ),
                                 ),
                               ),
                             ),
@@ -247,7 +322,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                   backgroundColor: Theme.of(
                                     context,
                                   ).colorScheme.error,
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 20,
+                                  ),
                                 ),
                               ),
                             ),
@@ -276,7 +353,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     return Container(
       height: 400,
       width: double.infinity,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       child: product.images.isNotEmpty
           ? PageView.builder(
               itemCount: product.images.length,
@@ -321,7 +403,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             ),
             const SizedBox(height: 16),
             _buildDetailRow(context, 'Product ID', '#${product.id}'),
-            _buildDetailRow(context, 'Brand', product.brand),
+            _buildDetailRow(context, 'Brand', product.brand ?? 'No Brand'),
             _buildDetailRow(context, 'Category', product.category),
             _buildDetailRow(
               context,

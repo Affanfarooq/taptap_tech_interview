@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
+import '../../../../core/utils/app_logger.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/exceptions.dart';
@@ -30,35 +30,40 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
   ProductRemoteDataSourceImpl({required this.client});
 
   void _logRequest(String method, String url, {Map<String, dynamic>? body}) {
-    developer.log('🌐 API REQUEST', name: 'ProductAPI', error: '$method $url');
+    AppLogger.i('🌐 API REQUEST | $method | $url');
     if (body != null) {
-      developer.log(
-        '📤 Request Body: ${json.encode(body)}',
-        name: 'ProductAPI',
-      );
+      final prettyJson = const JsonEncoder.withIndent('  ').convert(body);
+      AppLogger.v('Request Body:\n$prettyJson');
     }
   }
 
   void _logResponse(int statusCode, String body, {String? endpoint}) {
     final emoji = statusCode >= 200 && statusCode < 300 ? '✅' : '❌';
-    developer.log(
-      '$emoji API RESPONSE',
-      name: 'ProductAPI',
-      error:
-          'Status: $statusCode${endpoint != null ? ' | Endpoint: $endpoint' : ''}',
-    );
-    developer.log(
-      '📥 Response: ${body.length > 500 ? '${body.substring(0, 500)}...' : body}',
-      name: 'ProductAPI',
-    );
+    final logMethod = statusCode >= 200 && statusCode < 300
+        ? AppLogger.i
+        : AppLogger.e;
+
+    logMethod('$emoji API RESPONSE | $statusCode | ${endpoint ?? 'Unknown'}');
+
+    try {
+      final jsonData = json.decode(body);
+      final prettyJson = const JsonEncoder.withIndent('  ').convert(jsonData);
+      if (prettyJson.length > 1000) {
+        AppLogger.v(
+          'Response Data (Truncated):\n${prettyJson.substring(0, 1000)}...\n[Response truncated - ${prettyJson.length} total characters]',
+        );
+      } else {
+        AppLogger.v('Response Data:\n$prettyJson');
+      }
+    } catch (e) {
+      AppLogger.v(
+        'Raw Response: ${body.length > 200 ? '${body.substring(0, 200)}...' : body}',
+      );
+    }
   }
 
   void _logError(String operation, dynamic error) {
-    developer.log(
-      '🔴 ERROR in $operation',
-      name: 'ProductAPI',
-      error: error.toString(),
-    );
+    AppLogger.e('🔴 API ERROR | $operation | $error');
   }
 
   @override
@@ -78,9 +83,8 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        developer.log(
-          '✨ Loaded ${jsonData['products']?.length ?? 0} products',
-          name: 'ProductAPI',
+        AppLogger.i(
+          '✨ Loaded ${jsonData['products']?.length ?? 0} products (Total: ${jsonData['total']})',
         );
         return ProductListResponse.fromJson(jsonData);
       } else {
@@ -115,9 +119,8 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        developer.log(
+        AppLogger.i(
           '🔍 Search "$query" found ${jsonData['products']?.length ?? 0} products',
-          name: 'ProductAPI',
         );
         return ProductListResponse.fromJson(jsonData);
       } else {
@@ -152,9 +155,8 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        developer.log(
+        AppLogger.i(
           '📂 Category "$category" has ${jsonData['products']?.length ?? 0} products',
-          name: 'ProductAPI',
         );
         return ProductListResponse.fromJson(jsonData);
       } else {
@@ -192,10 +194,7 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
         // dummyjson.com returns categories as slug format (e.g., "beauty", "fragrances")
         final categories = jsonData.map((e) => e.toString()).toList();
 
-        developer.log(
-          '📋 Loaded ${categories.length} categories: ${categories.take(5).join(", ")}${categories.length > 5 ? '...' : ''}',
-          name: 'ProductAPI',
-        );
+        AppLogger.i('📋 Loaded ${categories.length} categories');
 
         return categories;
       } else {
@@ -226,9 +225,8 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final jsonData = json.decode(response.body);
-        developer.log(
-          '➕ Product added: ${jsonData['title']}',
-          name: 'ProductAPI',
+        AppLogger.i(
+          '➕ Product added: ${jsonData['title']} (ID: ${jsonData['id']})',
         );
         return ProductModel.fromJson(jsonData);
       } else {
@@ -264,9 +262,8 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        developer.log(
-          '✏️ Product updated: ${jsonData['title']}',
-          name: 'ProductAPI',
+        AppLogger.i(
+          '✏️ Product updated: ${jsonData['title']} (ID: ${jsonData['id']})',
         );
         return ProductModel.fromJson(jsonData);
       } else {
@@ -295,7 +292,7 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        developer.log('🗑️ Product deleted: ID $id', name: 'ProductAPI');
+        AppLogger.i('🗑️ Product deleted: ID $id');
       } else {
         throw ApiException('Failed to delete product', response.statusCode);
       }
