@@ -42,7 +42,9 @@ class SearchFilterBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (selectedCategory != null || showInStockOnly != null)
+          if (selectedCategory != null ||
+              showInStockOnly != null ||
+              searchController.text.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(

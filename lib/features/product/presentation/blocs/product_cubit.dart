@@ -37,9 +37,17 @@ class ProductCubit extends Cubit<ProductState> {
     int limit = AppConstants.itemsPerPage,
     bool forceReload = false,
   }) async {
+    final currentState = state;
+    final isCurrentlyFiltered =
+        currentState is ProductLoaded &&
+        (currentState.searchQuery != null ||
+            currentState.selectedCategory != null ||
+            currentState.showInStockOnly != null);
+
     if (!forceReload &&
-        state is ProductLoaded &&
-        (state as ProductLoaded).currentPage == page) {
+        !isCurrentlyFiltered &&
+        currentState is ProductLoaded &&
+        currentState.currentPage == page) {
       AppLogger.i('⏭️ Products already loaded for page $page, skipping hit');
       return;
     }
@@ -352,7 +360,7 @@ class ProductCubit extends Cubit<ProductState> {
 
   /// Clear filters and reload
   Future<void> clearFilters() async {
-    await loadProducts();
+    await loadProducts(forceReload: true);
   }
 
   /// Sort products

@@ -131,6 +131,7 @@ class _ProductCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Title
+                    const SizedBox(height: 4),
                     Text(
                       product.title,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
