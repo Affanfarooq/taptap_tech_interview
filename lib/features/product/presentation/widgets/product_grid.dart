@@ -56,8 +56,8 @@ class _ProductGridState extends State<ProductGrid> {
     final columns = ResponsiveUtils.getGridColumns(context);
 
     // Adjust aspect ratio based on columns to prevent overflow
-    // More columns = need taller cards
-    final aspectRatio = columns == 2 ? 0.8 : (columns == 3 ? 0.85 : 0.9);
+    // Side-by-side layout on mobile needs less vertical space
+    final aspectRatio = columns == 2 ? 0.85 : (columns == 3 ? 0.85 : 0.9);
 
     return GridView.builder(
       controller: _scrollController,
@@ -140,42 +140,50 @@ class _ProductCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    // Price
-                    Text(
-                      '\$${product.price.toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    // Price & Stock Status in a Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Price
+                        Text(
+                          '\$${product.price.toStringAsFixed(2)}',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
 
-                    // Stock Status
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: product.isInStock
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.red.withOpacity(0.1),
-                        border: Border.all(
-                          color: product.isInStock
-                              ? Colors.green.withOpacity(0.5)
-                              : Colors.red.withOpacity(0.5),
+                        // Stock Status Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: product.isInStock
+                                ? Colors.green.withOpacity(0.1)
+                                : Colors.red.withOpacity(0.1),
+                            border: Border.all(
+                              color: product.isInStock
+                                  ? Colors.green.withOpacity(0.5)
+                                  : Colors.red.withOpacity(0.5),
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            product.stockStatus,
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: product.isInStock
+                                      ? Colors.green
+                                      : Colors.red,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10,
+                                ),
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        product.stockStatus,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: product.isInStock ? Colors.green : Colors.red,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      ],
                     ),
                   ],
                 ),

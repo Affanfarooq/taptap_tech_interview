@@ -30,13 +30,19 @@ class DashboardLayout extends StatelessWidget {
           ? null
           : AppBar(
               title: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.inventory_2,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(width: 12),
-                  const Text('Product Dashboard'),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      isMobile ? 'Dashboard' : 'Product Dashboard',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
               actions: [

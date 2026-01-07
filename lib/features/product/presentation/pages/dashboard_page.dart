@@ -28,8 +28,9 @@ class DashboardPage extends StatelessWidget {
                       totalProducts
                 : 0.0;
 
+            final isMobile = MediaQuery.of(context).size.width < 600;
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(isMobile ? 16 : 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -44,16 +45,19 @@ class DashboardPage extends StatelessWidget {
                   // Stats Cards
                   LayoutBuilder(
                     builder: (context, constraints) {
+                      final isMobile = constraints.maxWidth < 600;
                       final crossAxisCount = constraints.maxWidth > 1200
                           ? 4
-                          : (constraints.maxWidth > 800 ? 2 : 1);
+                          : (constraints.maxWidth > 800
+                                ? 2
+                                : 2); // Force 2 for tablet/mobile
                       return GridView.count(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         crossAxisCount: crossAxisCount,
-                        childAspectRatio: 2.5,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
+                        childAspectRatio: isMobile ? 1.5 : 2.5,
+                        crossAxisSpacing: isMobile ? 12 : 16,
+                        mainAxisSpacing: isMobile ? 12 : 16,
                         children: [
                           _StatCard(
                             label: 'Total Products',
@@ -138,8 +142,9 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
@@ -153,9 +158,9 @@ class _StatCard extends StatelessWidget {
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color),
+            child: Icon(icon, color: color, size: isMobile ? 20 : 24),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: isMobile ? 8 : 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,11 +202,14 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        width: 200,
+        width: isMobile
+            ? (MediaQuery.of(context).size.width - 64) / 2
+            : 200, // 2 items per row on mobile
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           border: Border.all(
